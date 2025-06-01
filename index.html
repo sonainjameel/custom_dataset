@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Scene 10</title>
+  <style>
+    html, body { height: 100%; margin:  0; overflow: hidden; }
+    canvas { width: 100%; height: 100%; display: block; }
+  </style>
+</head>
+<body>
+<canvas id="c"></canvas>
+
+<!-- GUI -->
+<script src="https://cdn.jsdelivr.net/npm/lil-gui@0.17/dist/lil-gui.umd.min.js"></script>
+<script async src="https://unpkg.com/es-module-shims@1.3.6/dist/es-module-shims.js"></script>
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.159.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.159.0/examples/jsm/"
+  }
+}
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { OBJLoader } from 'three/addons/loaders/OBJLoader.js';
+
+const canvas = document.querySelector('#c');
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setPixelRatio(window.devicePixelRatio);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.outputEncoding = THREE.sRGBEncoding;
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x222222);
+
+const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 100);
+camera.position.set(0, 1.19, 2.37);
+
+const orbitControls = new OrbitControls(camera, renderer.domElement);
+orbitControls.target.set(0, 0.95, -6);
+orbitControls.update();
+
+// Lights
+const ambient = new THREE.AmbientLight(0xffffff, 0.2);
+scene.add(ambient);
+
+const greenLight = new THREE.SpotLight(0x7E9182, 10, 20, Math.PI / 8, 0.3, 2);
+//greenLight.position.set(-0.83, 1.84, 4.55);
+greenLight.position.set(-1.6, 1.84, 4.55);
+greenLight.castShadow = true;
+scene.add(greenLight);
+const greenTarget = new THREE.Object3D();
+greenTarget.position.set(-0.75, 1, -2);
+scene.add(greenTarget);
+greenLight.target = greenTarget;
+
+const redLight = new THREE.SpotLight(0x717073, 20, 20, Math.PI / 8, 0.3, 2);
+//redLight.position.set(0.79, 1.88, 4.03);
+redLight.position.set(1.6, 1.88, 4.03);
+redLight.castShadow = true;
+scene.add(redLight);
+const redTarget = new THREE.Object3D();
+redTarget.position.set(0.75, 1, -2);
+scene.add(redTarget);
+redLight.target = redTarget;
+
+const redHelper = new THREE.SpotLightHelper(redLight);
+const greenHelper = new THREE.SpotLightHelper(greenLight);
+scene.add(redHelper, greenHelper);
+const cameraHelper = new THREE.CameraHelper(camera);
+scene.add(cameraHelper);
+
+// Floor
+const floorGeometry = new THREE.BufferGeometry();
+const floorVertices = new Float32Array([
+  -1.0, 0, -2.0,
+   1.0, 0, -2.0,
+  -2.085, 0, -6.0,
+   2.085, 0, -6.0
+]);
+const floorIndices = [0, 1, 2, 2, 1, 3];
+floorGeometry.setIndex(floorIndices);
+floorGeometry.setAttribute('position', new THREE.BufferAttribute(floorVertices, 3));
+floorGeometry.computeVertexNormals();
+const floorMaterial = new THREE.MeshStandardMaterial({ color: 0x333333, roughness: 1 });
+const floor = new THREE.Mesh(floorGeometry, floorMaterial);
+floor.receiveShadow = true;
+floor.castShadow = true;
+scene.add(floor);
+
+// Wall
+const wallGeometry = new THREE.PlaneGeometry(4.17, 2.5);
+const wallMaterial = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 1, metalness: 0 });
+const wall = new THREE.Mesh(wallGeometry, wallMaterial);
+wall.position.set(0, 1.25, -6); 
+wall.receiveShadow = true;
+wall.castShadow = true;
+scene.add(wall);
+
+// Load OBJ
+
+const objLoader = new OBJLoader();
+
+// Preset RGB colors and intensities
+const redPresets = {
+  color: {
+    "Stone Gray": 0x717073,
+	"Clay Brown": 0x986C49,
+	"Fresh Green": 0x2C9E50,
+	"Deep Green": 0x00AE4D,
+	"Aqua Steel": 0x1B939B,
+	"Electric Indigo": 0x4C41FF,
+    "R1":0xe1d1ff,
+    "R2":0xffc3ce,
+    "R3":0xe4fffc,
+    "R4":0xcffff5,
+    "R5":0xb0ceff,
+    "R6":0x4e57ff
+  },
+  intensity: [10, 20, 30, 40, 50, 60, 70, 80, 90, 100]
+};
+
+const greenPresets = {
+  color: {
+    "Sage Gray": 0x7E9182,
+	"Mint Leaf": 0x47B28A,
+	"Orchid Purple": 0xC65FDD,
+	"Fuchsia Rose": 0xEA3EBF,
+	"Watermelon Pink": 0xEC4A71,
+    "Tomato Red": 0xFA2722,
+    "L1":0xffffff,
+    "L2":0xbff0ff,
+    "L3":0x9b87ff,
+    "L4":0xca8eff,
+    "L5":0xff849a,
+    "L6":0xff5d6a
+  },
+  intensity: [10, 20, 30, 40, 50, 60, 70, 80, 90, 100]
+};
+
+// GUI
+const gui = new window.lil.GUI();
+
+const redFolder = gui.addFolder('Right Light');
+const redSettings = {
+  enabled: true,
+  color: 'Stone Gray',
+  intensity: 20
+};
+redFolder.add(redSettings, 'enabled').name('Enable').onChange(v => redLight.visible = v);
+redFolder.add(redSettings, 'color', Object.keys(redPresets.color)).name('Color').onChange(name => redLight.color.setHex(redPresets.color[name]));
+redFolder.add(redSettings, 'intensity', redPresets.intensity).name('Intensity').onChange(v => redLight.intensity = v);
+
+const greenFolder = gui.addFolder('Left Light');
+const greenSettings = {
+  enabled: true,
+  color: 'Sage Gray',
+  intensity: 10
+};
+greenFolder.add(greenSettings, 'enabled').name('Enable').onChange(v => greenLight.visible = v);
+greenFolder.add(greenSettings, 'color', Object.keys(greenPresets.color)).name('Color').onChange(name => greenLight.color.setHex(greenPresets.color[name]));
+greenFolder.add(greenSettings, 'intensity', greenPresets.intensity).name('Intensity').onChange(v => greenLight.intensity = v);
+const ambientFolder = gui.addFolder('Ambient Light');
+const ambientSettings = {
+  enabled: true,
+  intensity: ambient.intensity,
+  preset: 'Neutral'
+};
+
+const ambientPresets = {
+  Neutral: 0xffffff,  // white
+  Warm: 0xffe0b3,     // soft orange
+  Cool: 0xb3d9ff      // light blue
+};
+
+ambientFolder.add(ambientSettings, 'enabled').name('Enable').onChange(v => {
+  if (v && !scene.children.includes(ambient)) scene.add(ambient);
+  else if (!v && scene.children.includes(ambient)) scene.remove(ambient);
+});
+ambientFolder.add(ambientSettings, 'intensity', 0, 1).step(0.01).name('Intensity').onChange(v => ambient.intensity = v);
+ambientFolder.add(ambientSettings, 'preset', Object.keys(ambientPresets)).name('Preset Color').onChange(preset => {
+  ambient.color.setHex(ambientPresets[preset]);
+});
+
+// Helpers
+const helperFolder = gui.addFolder('Helpers');
+const helperSettings = {
+  red: true,
+  green: true,
+  camera: true
+};
+helperFolder.add(helperSettings, 'red').name('Green Light Helper').onChange(v => redHelper.visible = v);
+helperFolder.add(helperSettings, 'green').name('Left Light Helper').onChange(v => greenHelper.visible = v);
+helperFolder.add(helperSettings, 'camera').name('Camera Helper').onChange(v => cameraHelper.visible = v);
+const objOptions = {
+  model: 'damien1.obj'
+};
+
+const objFiles = {
+  'Object 1': 'damien1.obj',
+  'Object 2': 'damien2.obj',
+  'Object 3': 'sonain1.obj',
+  'Object 4': 'sonain2.obj'
+};
+
+let currentObj;
+
+function loadOBJ(name) {
+  if (currentObj) {
+    scene.remove(currentObj);
+  }
+  objLoader.load(name, object => {
+    object.scale.set(-0.5, 0.5, 0.5);
+    object.position.set(0, 0.93, -3.5);
+    object.castShadow = true;
+    object.receiveShadow = true;
+    object.traverse(child => {
+      if (child.isMesh) {
+        const hasVertexColors = child.geometry.attributes.color !== undefined;
+        const material = new THREE.MeshPhysicalMaterial({
+          vertexColors: hasVertexColors,
+          roughness: 0.65,
+          metalness: 0.0,
+          clearcoat: 0.05,
+          clearcoatRoughness: 0.8,
+          transmission: 0.2,
+          thickness: 0.5,
+          ior: 1.38,
+          attenuationDistance: 1.2,
+          attenuationColor: new THREE.Color(0xffccb0),
+        });
+        child.material = material;
+        child.castShadow = true;
+        child.receiveShadow = true;
+      }
+    });
+    currentObj = object;
+    scene.add(currentObj);
+  });
+}
+
+loadOBJ(objOptions.model); // initial load
+
+// GUI Dropdown
+const objFolder = gui.addFolder('OBJ Models');
+objFolder.add(objOptions, 'model', objFiles).name('Select Model').onChange(loadOBJ);
+
+function animate() {
+  requestAnimationFrame(animate);
+  redHelper.update();
+  greenHelper.update();
+  renderer.render(scene, camera);
+}
+
+animate();
+
+window.addEventListener('resize', () => {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});
+</script>
+</body>
+</html>
